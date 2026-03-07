@@ -1,0 +1,1056 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Master BOM Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --navy:#1a1a2e;--navy2:#16213e;--navy3:#0f3460;
+  --red:#e54c4c;--red2:#c0392b;
+  --green:#059669;--green-bg:#d1fae5;--green-txt:#065f46;
+  --blue-bg:#dbeafe;--blue-txt:#1d4ed8;
+  --yellow-bg:#fef9c3;--yellow-txt:#854d0e;
+  --purple:#7c3aed;--purple-bg:#ede9fe;
+  --grey:#f0f2f5;--grey2:#e8eaf0;--grey3:#dde1ea;
+  --text:#1a1a2e;--text2:#555;--text3:#888;--text4:#aaa;
+  --shadow:0 2px 12px rgba(0,0,0,0.08);--shadow-lg:0 8px 32px rgba(0,0,0,0.15);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--grey);color:var(--text);min-height:100vh;}
+
+/* ── Lock Screen ── */
+.lock-screen{position:fixed;inset:0;background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 50%,var(--navy3) 100%);z-index:1000;display:flex;align-items:center;justify-content:center;}
+.lock-box{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);border-radius:20px;padding:40px;width:380px;max-width:90vw;text-align:center;backdrop-filter:blur(10px);}
+.lock-icon{font-size:48px;margin-bottom:16px;}
+.lock-title{font-size:22px;font-weight:800;color:#fff;margin-bottom:6px;}
+.lock-sub{font-size:13px;color:#94a3b8;margin-bottom:28px;}
+.lock-input{width:100%;padding:13px 16px;border-radius:10px;border:1.5px solid rgba(255,255,255,0.2);background:rgba(255,255,255,0.08);color:#fff;font-size:15px;font-family:'DM Sans',sans-serif;outline:none;text-align:center;letter-spacing:3px;margin-bottom:14px;}
+.lock-input::placeholder{letter-spacing:0;color:#64748b;}
+.lock-input:focus{border-color:var(--red);}
+.lock-btn{width:100%;padding:13px;background:var(--red);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+.lock-btn:hover{background:var(--red2);}
+.lock-err{color:#fc8181;font-size:13px;margin-top:10px;min-height:20px;}
+.lock-view-btn{margin-top:14px;background:transparent;border:1px solid rgba(255,255,255,0.2);color:#94a3b8;border-radius:10px;padding:10px;width:100%;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+.lock-view-btn:hover{border-color:rgba(255,255,255,0.4);color:#fff;}
+
+/* ── Edit Lock Banner ── */
+.edit-banner{display:none;background:#fffbeb;border-bottom:2px solid #f59e0b;padding:8px 28px;font-size:12px;color:#92400e;display:flex;align-items:center;justify-content:space-between;}
+.edit-banner.locked-mode{background:#fff1f2;border-color:var(--red);}
+.banner-left{display:flex;align-items:center;gap:8px;}
+
+/* ── Header ── */
+.header{background:linear-gradient(135deg,var(--navy) 0%,var(--navy2) 60%,var(--navy3) 100%);padding:20px 28px 0;border-bottom:3px solid var(--red);}
+.header-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;}
+.logo{display:flex;align-items:center;gap:12px;}
+.logo-icon{width:42px;height:42px;background:var(--red);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.logo-title{font-size:22px;font-weight:800;color:#fff;letter-spacing:-0.5px;}
+.logo-sub{font-size:11px;color:#94a3b8;margin-top:2px;}
+.stats{display:flex;gap:10px;flex-wrap:wrap;}
+.stat-box{background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:9px 14px;text-align:center;}
+.stat-val{font-size:16px;font-weight:800;color:var(--red);}
+.stat-lbl{font-size:10px;color:#94a3b8;margin-top:1px;}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;}
+.tab{padding:9px 16px;border-radius:8px 8px 0 0;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+.tab.active{background:var(--red);color:#fff;}
+.tab:not(.active){background:rgba(255,255,255,0.07);color:#94a3b8;}
+.tab:not(.active):hover{background:rgba(255,255,255,0.13);color:#fff;}
+.content{padding:24px 28px;}
+.two-col{display:flex;gap:22px;}
+.left-panel{width:310px;flex-shrink:0;}
+.right-panel{flex:1;min-width:0;}
+.search-wrap{position:relative;margin-bottom:10px;}
+.search-wrap input{width:100%;padding:9px 12px 9px 36px;border-radius:8px;border:1.5px solid var(--grey3);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;background:#fff;transition:border 0.2s;}
+.search-wrap input:focus{border-color:var(--red);}
+.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:14px;}
+.filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.filter-btn{padding:5px 12px;border-radius:20px;border:1.5px solid var(--grey3);background:#fff;font-size:11px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+.filter-btn.active{border-color:var(--red);background:var(--red);color:#fff;}
+.bom-list{display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 290px);overflow-y:auto;padding-right:4px;}
+.bom-list::-webkit-scrollbar{width:4px;}
+.bom-list::-webkit-scrollbar-thumb{background:var(--grey3);border-radius:4px;}
+.bom-card{background:#fff;border-radius:12px;padding:13px 15px;cursor:pointer;border:2px solid var(--grey2);transition:all 0.2s;box-shadow:var(--shadow);}
+.bom-card:hover{box-shadow:var(--shadow-lg);}
+.card-top{display:flex;justify-content:space-between;align-items:flex-start;}
+.card-name{font-size:13px;font-weight:700;}
+.card-id{font-size:11px;margin-top:3px;}
+.card-bottom{display:flex;justify-content:space-between;margin-top:8px;font-size:12px;}
+.cat-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;margin-top:5px;display:inline-block;}
+.status-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;}
+.status-active{background:var(--green-bg);color:var(--green-txt);}
+.status-draft{background:var(--yellow-bg);color:var(--yellow-txt);}
+.detail-meta{background:#fff;border-radius:12px;padding:18px 22px;margin-bottom:14px;border:1px solid var(--grey2);box-shadow:var(--shadow);}
+.detail-title{font-size:20px;font-weight:800;}
+.detail-sub{font-size:12px;color:var(--text3);margin-top:4px;}
+.detail-kpis{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap;}
+.kpi-box{background:var(--grey);border-radius:10px;padding:9px 16px;text-align:center;}
+.kpi-val{font-size:18px;font-weight:800;}
+.kpi-lbl{font-size:10px;color:var(--text3);margin-top:2px;}
+.table-wrap{background:#fff;border-radius:12px;border:1px solid var(--grey2);overflow:hidden;box-shadow:var(--shadow);margin-bottom:14px;}
+.table-head{padding:13px 20px;border-bottom:1px solid var(--grey);display:flex;justify-content:space-between;align-items:center;}
+.table-head h3{font-size:14px;font-weight:700;}
+table{width:100%;border-collapse:collapse;font-size:12px;}
+thead tr{background:var(--grey);}
+th{padding:9px 11px;text-align:left;font-weight:700;color:var(--text2);font-size:11px;border-bottom:1px solid var(--grey2);white-space:nowrap;}
+td{padding:9px 11px;border-bottom:1px solid var(--grey);white-space:nowrap;}
+tr:last-child td{border-bottom:none;}
+tr:nth-child(even){background:#fafbfd;}
+.tfoot-row td{background:var(--grey);font-weight:700;}
+.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text2);}
+.type-raw{background:#dbeafe;color:#1d4ed8;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.type-consumable{background:#fef3c7;color:#92400e;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.type-sub{background:#ede9fe;color:#5b21b6;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.lead-ok{background:var(--green-bg);color:var(--green-txt);font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.lead-warn{background:#fee2e2;color:#b91c1c;font-size:10px;font-weight:700;padding:2px 7px;border-radius:8px;}
+.cost-val{font-weight:700;color:var(--navy3);}
+.total-cost{font-weight:800;color:var(--red);font-size:14px;}
+.btn{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;font-family:'DM Sans',sans-serif;transition:all 0.2s;}
+.btn-red{background:var(--red);color:#fff;}
+.btn-red:hover{background:var(--red2);}
+.btn-green{background:var(--green);color:#fff;}
+.btn-green:hover{background:#047857;}
+.btn-grey{background:var(--grey);color:var(--text2);}
+.btn-grey:hover{background:var(--grey2);}
+.btn-purple{background:var(--purple);color:#fff;}
+.btn-purple:hover{background:#6d28d9;}
+.btn-sm{padding:4px 9px;font-size:11px;border-radius:6px;}
+.btn-edit{background:#eff6ff;color:#1d4ed8;}
+.btn-del{background:#fff1f2;color:#e11d48;}
+.btn-save{background:var(--green-bg);color:var(--green-txt);}
+.add-form{padding:14px 20px;background:var(--grey);border-bottom:1px solid var(--grey2);animation:slideDown 0.2s ease;}
+@keyframes slideDown{from{opacity:0;transform:translateY(-8px);}to{opacity:1;transform:translateY(0);}}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:9px;}
+.form-field label{font-size:11px;color:var(--text3);display:block;margin-bottom:3px;font-weight:600;}
+.form-field input,.form-field select{width:100%;padding:7px 9px;border-radius:6px;border:1.5px solid var(--grey3);font-size:12px;font-family:'DM Sans',sans-serif;outline:none;background:#fff;}
+.form-field input:focus,.form-field select:focus{border-color:var(--red);}
+.form-actions{margin-top:10px;display:flex;gap:8px;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;align-items:center;justify-content:center;}
+.modal-overlay.show{display:flex;}
+.modal{background:#fff;border-radius:16px;padding:26px;width:500px;max-width:95vw;box-shadow:var(--shadow-lg);animation:modalIn 0.2s ease;max-height:90vh;overflow-y:auto;}
+@keyframes modalIn{from{opacity:0;transform:scale(0.95);}to{opacity:1;transform:scale(1);}}
+.modal h2{font-size:17px;font-weight:800;margin-bottom:18px;}
+.modal-grid{display:grid;grid-template-columns:1fr 1fr;gap:11px;}
+.modal-field label{font-size:12px;font-weight:600;color:var(--text3);display:block;margin-bottom:4px;}
+.modal-field input,.modal-field select{width:100%;padding:9px 11px;border-radius:8px;border:1.5px solid var(--grey3);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+.modal-field input:focus,.modal-field select:focus{border-color:var(--red);}
+.modal-field.full{grid-column:span 2;}
+.modal-actions{margin-top:18px;display:flex;gap:10px;justify-content:flex-end;}
+.empty{display:flex;align-items:center;justify-content:center;height:280px;background:#fff;border-radius:12px;border:2px dashed var(--grey3);color:var(--text4);font-size:14px;flex-direction:column;gap:8px;}
+.tab-content{display:none;}
+.tab-content.active{display:block;}
+.card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:16px;}
+.info-card{background:#fff;border-radius:14px;padding:18px;border:1px solid var(--grey2);box-shadow:var(--shadow);}
+.info-card h3{font-size:14px;font-weight:700;margin-bottom:12px;}
+.bar-row{margin-bottom:12px;}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.bar-track{background:var(--grey);border-radius:20px;height:9px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:20px;transition:width 0.6s ease;}
+.dist-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--grey);}
+.dist-row:last-child{border-bottom:none;}
+.risk-item{padding:7px 0;border-bottom:1px solid var(--grey);}
+.risk-item:last-child{border-bottom:none;}
+.risk-name{font-weight:600;color:#b91c1c;font-size:12px;}
+.risk-sub{color:var(--text3);font-size:11px;margin-top:2px;}
+.shared-tag{font-size:10px;padding:2px 6px;background:var(--green-bg);color:var(--green-txt);border-radius:7px;font-weight:700;margin-left:5px;}
+.toast{position:fixed;bottom:28px;right:28px;background:var(--navy);color:#fff;padding:11px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:999;animation:toastIn 0.3s ease;box-shadow:var(--shadow-lg);}
+@keyframes toastIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.edit-input{padding:4px 7px;border-radius:5px;border:1.5px solid var(--red);font-size:11px;font-family:'DM Sans',sans-serif;width:85px;}
+.edit-select{padding:4px 6px;border-radius:5px;border:1.5px solid var(--red);font-size:11px;font-family:'DM Sans',sans-serif;}
+
+/* ── Category Manager ── */
+.cat-manager{background:#fff;border-radius:14px;border:1px solid var(--grey2);box-shadow:var(--shadow);overflow:hidden;}
+.cat-manager-head{padding:16px 22px;background:linear-gradient(135deg,var(--navy),var(--navy3));display:flex;justify-content:space-between;align-items:center;}
+.cat-manager-head h3{color:#fff;font-size:14px;font-weight:700;}
+.cat-row{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--grey2);transition:background 0.15s;}
+.cat-row:last-child{border-bottom:none;}
+.cat-row:hover{background:var(--grey);}
+.cat-info{display:flex;align-items:center;gap:10px;}
+.cat-dot{width:13px;height:13px;border-radius:4px;flex-shrink:0;}
+.cat-name-txt{font-weight:700;font-size:13px;}
+.cat-bom-count{font-size:11px;color:var(--text3);}
+.cat-add-row{padding:14px 20px;background:var(--grey);display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;}
+.cat-add-row input{padding:8px 11px;border-radius:8px;border:1.5px solid var(--grey3);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;}
+.cat-add-row input:focus{border-color:var(--red);}
+.color-picker-wrap{display:flex;flex-direction:column;gap:3px;}
+.color-picker-wrap label{font-size:11px;color:var(--text3);font-weight:600;}
+.color-swatches{display:flex;gap:4px;flex-wrap:wrap;}
+.swatch{width:20px;height:20px;border-radius:5px;cursor:pointer;border:2px solid transparent;transition:transform 0.15s;}
+.swatch:hover{transform:scale(1.2);}
+.swatch.selected{border-color:var(--navy);transform:scale(1.15);}
+
+/* ── Cost Structure ── */
+.cost-section{background:#fff;border-radius:12px;border:1px solid var(--grey2);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.cost-section-head{padding:12px 20px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--grey2);}
+.cost-section-head h4{font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;}
+.cost-item-row{display:flex;align-items:center;gap:10px;padding:8px 20px;border-bottom:1px solid var(--grey);flex-wrap:wrap;}
+.cost-item-row:last-child{border-bottom:none;}
+.cost-item-row:nth-child(even){background:#fafbfd;}
+.cost-item-name{flex:1;min-width:160px;font-size:13px;font-weight:600;}
+.cost-item-val{font-size:13px;font-weight:700;color:var(--navy3);min-width:90px;text-align:right;}
+.cost-item-pct{font-size:11px;color:var(--text3);min-width:50px;text-align:right;}
+.cost-type-badge{font-size:10px;padding:2px 7px;border-radius:8px;font-weight:700;}
+.cost-input{padding:5px 9px;border-radius:6px;border:1.5px solid var(--grey3);font-size:12px;font-family:'DM Sans',sans-serif;width:100px;outline:none;}
+.cost-input:focus{border-color:var(--red);}
+.grand-total-box{background:linear-gradient(135deg,var(--navy),var(--navy3));border-radius:12px;padding:20px 24px;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.gt-label{font-size:13px;color:#94a3b8;font-weight:600;}
+.gt-val{font-size:28px;font-weight:800;color:#fff;}
+.gt-breakdown{display:flex;gap:16px;flex-wrap:wrap;}
+.gt-item{text-align:center;}
+.gt-item-val{font-size:14px;font-weight:700;}
+.gt-item-lbl{font-size:10px;color:#94a3b8;margin-top:2px;}
+
+/* ── Locked overlay for inputs ── */
+body.view-only .btn-red:not(.allow-view),
+body.view-only .btn-green,
+body.view-only .btn-del,
+body.view-only .btn-edit,
+body.view-only .btn-save,
+body.view-only button[onclick*="add"],
+body.view-only button[onclick*="Add"],
+body.view-only button[onclick*="delete"],
+body.view-only button[onclick*="Delete"],
+body.view-only button[onclick*="save"],
+body.view-only button[onclick*="edit"]{
+  opacity:0.35;pointer-events:none;cursor:not-allowed;
+}
+
+@media(max-width:768px){.two-col{flex-direction:column;}.left-panel{width:100%;}.content{padding:14px;}.modal-grid{grid-template-columns:1fr;}.modal-field.full{grid-column:span 1;}}
+</style>
+</head>
+<body class="view-only">
+
+<!-- ══ LOCK SCREEN ══ -->
+<div class="lock-screen" id="lock-screen">
+  <div class="lock-box">
+    <div class="lock-icon">🔐</div>
+    <div class="lock-title">Master BOM Manager</div>
+    <div class="lock-sub">Enter password for full edit access<br>or continue as view-only</div>
+    <input type="password" class="lock-input" id="lock-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')tryUnlock()">
+    <button class="lock-btn" onclick="tryUnlock()">🔓 Unlock Edit Access</button>
+    <div class="lock-err" id="lock-err"></div>
+    <button class="lock-view-btn" onclick="enterViewOnly()">👁 Continue as View-Only (Read Only)</button>
+  </div>
+</div>
+
+<!-- ══ EDIT BANNER ══ -->
+<div id="edit-banner" style="background:#d1fae5;border-bottom:2px solid #059669;padding:7px 28px;font-size:12px;color:#065f46;display:none;align-items:center;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span>🔓</span><strong>Edit Mode Active</strong> — You can add, edit and delete data
+  </div>
+  <button class="btn btn-sm" style="background:#059669;color:#fff;" onclick="lockApp()">🔒 Lock</button>
+</div>
+<div id="view-banner" style="background:#fff1f2;border-bottom:2px solid var(--red);padding:7px 28px;font-size:12px;color:#b91c1c;display:none;align-items:center;justify-content:space-between;">
+  <div style="display:flex;align-items:center;gap:8px;">
+    <span>🔒</span><strong>View-Only Mode</strong> — Data is read-only. Enter password to edit.
+  </div>
+  <button class="btn btn-sm btn-red allow-view" onclick="showLockScreen()">🔑 Enter Password</button>
+</div>
+
+<!-- ══ HEADER ══ -->
+<div class="header">
+  <div class="header-top">
+    <div class="logo">
+      <div class="logo-icon">⚙</div>
+      <div>
+        <div class="logo-title">Master BOM Manager</div>
+        <div class="logo-sub" id="header-sub">Loading...</div>
+      </div>
+    </div>
+    <div class="stats">
+      <div class="stat-box"><div class="stat-val" id="stat-total">0</div><div class="stat-lbl">Total BOMs</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-active">0</div><div class="stat-lbl">Active</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-parts">0</div><div class="stat-lbl">Unique Parts</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-suppliers">0</div><div class="stat-lbl">Suppliers</div></div>
+      <div class="stat-box"><div class="stat-val" id="stat-cats">0</div><div class="stat-lbl">Categories</div></div>
+    </div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('bom',this)">📋 BOM Library</button>
+    <button class="tab" onclick="switchTab('costs',this)">💰 Cost Structure</button>
+    <button class="tab" onclick="switchTab('matrix',this)">🔩 Component Matrix</button>
+    <button class="tab" onclick="switchTab('supplier',this)">🏭 Supplier View</button>
+    <button class="tab" onclick="switchTab('analytics',this)">📊 Analytics</button>
+    <button class="tab" onclick="switchTab('categories',this)">🏷️ Categories</button>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- BOM Library -->
+<div id="tab-bom" class="tab-content active">
+  <div class="two-col">
+    <div class="left-panel">
+      <div class="search-wrap"><span class="search-icon">🔍</span><input type="text" id="search-input" placeholder="Search BOMs..." oninput="renderBOMList()"></div>
+      <div class="filters" id="filters"></div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+        <button class="btn btn-red btn-sm" onclick="openAddBOMModal()">+ New BOM</button>
+      </div>
+      <div class="bom-list" id="bom-list"></div>
+    </div>
+    <div class="right-panel" id="right-panel">
+      <div class="empty"><span style="font-size:32px">📋</span><span>Select a BOM to view details</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COST STRUCTURE TAB ══ -->
+<div id="tab-costs" class="tab-content">
+  <div style="max-width:860px;margin:0 auto;">
+
+    <!-- Grand Total Box -->
+    <div class="grand-total-box" id="grand-total-box">
+      <div>
+        <div class="gt-label">Select a BOM to see Total Manufacturing Cost</div>
+        <div class="gt-val" id="gt-val">$ 0.00</div>
+      </div>
+      <div class="gt-breakdown" id="gt-breakdown"></div>
+    </div>
+
+    <!-- BOM Selector -->
+    <div style="background:#fff;border-radius:12px;padding:14px 20px;margin-bottom:14px;border:1px solid var(--grey2);display:flex;align-items:center;gap:14px;flex-wrap:wrap;">
+      <label style="font-size:13px;font-weight:700;white-space:nowrap;">Select BOM:</label>
+      <select id="cost-bom-select" onchange="renderCostTab()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--grey3);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;flex:1;min-width:200px;">
+        <option value="">-- Choose a BOM --</option>
+      </select>
+      <label style="font-size:13px;font-weight:700;white-space:nowrap;">Production Qty:</label>
+      <input type="number" id="prod-qty" value="1" min="1" onchange="renderCostTab()" style="padding:8px 12px;border-radius:8px;border:1.5px solid var(--grey3);font-size:13px;font-family:'DM Sans',sans-serif;width:90px;outline:none;">
+    </div>
+
+    <!-- Material Cost (auto from BOM) -->
+    <div class="cost-section">
+      <div class="cost-section-head">
+        <h4>🧱 Material Cost <span style="font-size:11px;color:var(--text3);font-weight:400">(auto from BOM components)</span></h4>
+        <span id="mat-total" style="font-weight:800;color:var(--navy3);">$ 0.00</span>
+      </div>
+      <div id="mat-rows"></div>
+    </div>
+
+    <!-- Additional Cost Groups -->
+    <div id="cost-groups-container"></div>
+
+    <!-- Add Cost Item -->
+    <div class="cost-section">
+      <div class="cost-section-head">
+        <h4>➕ Add New Cost Item</h4>
+      </div>
+      <div style="padding:14px 20px;background:var(--grey);">
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:10px;">
+          <div class="form-field"><label>Cost Name *</label><input id="nc-name" placeholder="e.g. Freight"></div>
+          <div class="form-field"><label>Group *</label>
+            <select id="nc-group">
+              <option>Overhead Cost</option>
+              <option>Utility Cost</option>
+              <option>Operational Cost</option>
+              <option>Chemical Cost</option>
+              <option>Bank Charges</option>
+              <option>Transport Cost</option>
+              <option>Packaging Cost</option>
+              <option>Management Cost</option>
+              <option>Indirect Cost</option>
+              <option>Other Cost</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Amount ($)</label><input type="number" id="nc-amount" placeholder="0.00" step="0.01" min="0"></div>
+          <div class="form-field"><label>Type</label>
+            <select id="nc-type">
+              <option value="fixed">Fixed (per batch)</option>
+              <option value="perunit">Per Unit</option>
+              <option value="pct">% of Material Cost</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Notes</label><input id="nc-notes" placeholder="Optional"></div>
+        </div>
+        <button class="btn btn-red" onclick="addCostItem()">+ Add Cost Item</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Matrix -->
+<div id="tab-matrix" class="tab-content">
+  <div class="table-wrap">
+    <div class="table-head"><h3>Cross-BOM Component Matrix</h3></div>
+    <div style="overflow-x:auto"><table>
+      <thead><tr><th>Part No.</th><th>Part Name</th><th>Type</th><th>Supplier</th><th>Unit Cost</th><th>Used In BOM(s)</th><th>Count</th></tr></thead>
+      <tbody id="matrix-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- Supplier -->
+<div id="tab-supplier" class="tab-content">
+  <div class="card-grid" id="supplier-grid"></div>
+</div>
+
+<!-- Analytics -->
+<div id="tab-analytics" class="tab-content">
+  <div class="card-grid">
+    <div class="info-card" style="grid-column:span 2"><h3>💰 Total Manufacturing Cost by Product</h3><div id="cost-chart"></div></div>
+    <div class="info-card"><h3>📊 Category Distribution</h3><div id="cat-dist"></div></div>
+    <div class="info-card"><h3>⚠️ Lead Time Risk Register</h3><div id="risk-list"></div></div>
+    <div class="info-card"><h3>🔩 Component Types</h3><div id="type-dist"></div></div>
+  </div>
+</div>
+
+<!-- Categories -->
+<div id="tab-categories" class="tab-content">
+  <div class="cat-manager">
+    <div class="cat-manager-head">
+      <h3>🏷️ Product Category Manager</h3>
+      <span style="font-size:12px;color:#94a3b8">Add, edit or delete categories</span>
+    </div>
+    <div class="cat-add-row">
+      <div><div style="font-size:11px;color:var(--text3);font-weight:600;margin-bottom:3px">Category Name *</div><input id="new-cat-name" placeholder="e.g. Foam Products" style="width:190px"></div>
+      <div class="color-picker-wrap"><label>Color</label><div class="color-swatches" id="color-swatches"></div></div>
+      <button class="btn btn-red" onclick="addCategory()">+ Add Category</button>
+    </div>
+    <div id="cat-list"></div>
+  </div>
+  <div style="margin-top:14px;padding:12px 16px;background:#fffbeb;border-radius:10px;border:1px solid #f59e0b;font-size:12px;color:#92400e;">
+    💡 <strong>Tip:</strong> Categories appear as filter buttons and in all dropdowns across the app. You can add unlimited categories!
+  </div>
+</div>
+
+</div><!-- /content -->
+
+<!-- Add BOM Modal -->
+<div class="modal-overlay" id="add-bom-modal">
+  <div class="modal">
+    <h2>➕ Add New BOM</h2>
+    <div class="modal-grid">
+      <div class="modal-field full"><label>Product Name *</label><input id="new-bom-name" placeholder="e.g. Racing Saddle Elite"></div>
+      <div class="modal-field"><label>BOM ID *</label><input id="new-bom-id" placeholder="e.g. BOM-005"></div>
+      <div class="modal-field"><label>Version</label><input id="new-bom-ver" value="v1.0"></div>
+      <div class="modal-field"><label>Category *</label><select id="new-bom-cat"></select></div>
+      <div class="modal-field"><label>Status</label><select id="new-bom-status"><option>Active</option><option>Draft</option></select></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-grey" onclick="closeAddBOMModal()">Cancel</button>
+      <button class="btn btn-red" onclick="addBOM()">Create BOM</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+// PASSWORD  ← Change "bom2026" to your password
+// ══════════════════════════════════════════════
+const EDIT_PASSWORD = 'bom2026';
+let isEditMode = false;
+
+function tryUnlock(){
+  const pwd=document.getElementById('lock-pwd').value;
+  if(pwd===EDIT_PASSWORD){
+    isEditMode=true;
+    document.getElementById('lock-screen').style.display='none';
+    document.body.classList.remove('view-only');
+    document.getElementById('edit-banner').style.display='flex';
+    document.getElementById('view-banner').style.display='none';
+    toast('🔓 Edit mode unlocked!');
+  } else {
+    document.getElementById('lock-err').textContent='❌ Incorrect password. Try again.';
+    document.getElementById('lock-pwd').value='';
+    setTimeout(()=>document.getElementById('lock-err').textContent='',3000);
+  }
+}
+
+function enterViewOnly(){
+  isEditMode=false;
+  document.getElementById('lock-screen').style.display='none';
+  document.body.classList.add('view-only');
+  document.getElementById('edit-banner').style.display='none';
+  document.getElementById('view-banner').style.display='flex';
+}
+
+function lockApp(){
+  isEditMode=false;
+  document.body.classList.add('view-only');
+  document.getElementById('edit-banner').style.display='none';
+  document.getElementById('view-banner').style.display='flex';
+  toast('🔒 App locked');
+}
+
+function showLockScreen(){
+  document.getElementById('lock-screen').style.display='flex';
+  document.getElementById('lock-pwd').value='';
+  document.getElementById('lock-err').textContent='';
+}
+
+// ══════════════════════════════════════════════
+// COLOR PALETTE
+// ══════════════════════════════════════════════
+const PALETTE=['#e54c4c','#e07b39','#e0b439','#5bbf47','#4a90d9','#7c6af7','#e94899','#14b8a6','#0ea5e9','#f97316','#84cc16','#a855f7','#06b6d4','#ec4899','#8b5cf6','#10b981','#f59e0b','#3b82f6','#ef4444','#22c55e','#6366f1','#0d9488','#d97706','#7c3aed','#059669','#dc2626','#2563eb','#9333ea','#c2410c','#0891b2'];
+
+// ══════════════════════════════════════════════
+// DEFAULT DATA
+// ══════════════════════════════════════════════
+const DEFAULT_CATEGORIES=[
+  {name:'Saddle',color:'#4a90d9'},
+  {name:'Pedal Grip',color:'#5bbf47'},
+  {name:'Melamine',color:'#e07b39'},
+];
+
+const DEFAULT_BOMS=[
+  {id:'BOM-001',productName:'Racing Saddle Pro',category:'Saddle',version:'v2.3',status:'Active',lastUpdated:'2026-02-18',
+   components:[
+    {id:'C001',name:'Shell Base (PP)',partNo:'SH-PP-001',qty:1,uom:'pcs',supplier:'PolyTech',cost:4.20,leadDays:14,type:'Raw'},
+    {id:'C002',name:'Rail Steel Tube',partNo:'RL-ST-022',qty:2,uom:'pcs',supplier:'SteelMax',cost:3.80,leadDays:21,type:'Raw'},
+    {id:'C003',name:'EVA Foam Pad',partNo:'FP-EV-010',qty:1,uom:'pcs',supplier:'FoamPlus',cost:1.50,leadDays:7,type:'Raw'},
+    {id:'C004',name:'Cover Leather (PU)',partNo:'CV-PU-005',qty:0.08,uom:'m²',supplier:'LeatherCo',cost:12.00,leadDays:10,type:'Raw'},
+    {id:'C005',name:'Rivets Set',partNo:'RV-ZN-003',qty:1,uom:'set',supplier:'MetalWorks',cost:0.30,leadDays:5,type:'Consumable'},
+  ]},
+  {id:'BOM-002',productName:'MTB Grip Set – Dual Lock',category:'Pedal Grip',version:'v1.7',status:'Active',lastUpdated:'2026-01-30',
+   components:[
+    {id:'C006',name:'TPR Grip Rubber',partNo:'GR-TP-101',qty:2,uom:'pcs',supplier:'GripTech',cost:2.10,leadDays:10,type:'Raw'},
+    {id:'C007',name:'Alloy Clamp Ring',partNo:'CR-AL-009',qty:2,uom:'pcs',supplier:'AluminumPro',cost:1.40,leadDays:14,type:'Raw'},
+    {id:'C008',name:'Lock Screw M4',partNo:'SC-M4-002',qty:4,uom:'pcs',supplier:'FastenRight',cost:0.05,leadDays:3,type:'Consumable'},
+    {id:'C009',name:'End Cap PP',partNo:'EC-PP-007',qty:2,uom:'pcs',supplier:'PolyTech',cost:0.20,leadDays:7,type:'Raw'},
+  ]},
+  {id:'BOM-003',productName:'Melamine Dinner Plate 10"',category:'Melamine',version:'v3.1',status:'Active',lastUpdated:'2026-03-01',
+   components:[
+    {id:'C010',name:'Melamine Powder A1',partNo:'ML-A1-201',qty:180,uom:'g',supplier:'ChemBase',cost:0.0018,leadDays:21,type:'Raw'},
+    {id:'C011',name:'Cellulose Filler',partNo:'CF-NL-010',qty:40,uom:'g',supplier:'ChemBase',cost:0.0005,leadDays:21,type:'Raw'},
+    {id:'C012',name:'Color Masterbatch',partNo:'MB-WH-030',qty:5,uom:'g',supplier:'ColorTech',cost:0.012,leadDays:14,type:'Raw'},
+    {id:'C013',name:'Release Agent Spray',partNo:'RA-SL-001',qty:2,uom:'ml',supplier:'ChemBase',cost:0.004,leadDays:7,type:'Consumable'},
+  ]},
+];
+
+// Default cost items (shared across all BOMs — per unit unless fixed)
+const DEFAULT_COST_ITEMS=[
+  {id:'CI01',name:'Electricity',group:'Utility Cost',amount:0.50,type:'perunit',notes:''},
+  {id:'CI02',name:'Water',group:'Utility Cost',amount:0.10,type:'perunit',notes:''},
+  {id:'CI03',name:'Factory Rent',group:'Overhead Cost',amount:200,type:'fixed',notes:'Monthly apportionment'},
+  {id:'CI04',name:'Machine Depreciation',group:'Overhead Cost',amount:0.30,type:'perunit',notes:''},
+  {id:'CI05',name:'Bank Charges',group:'Bank Charges',amount:0.5,type:'pct',notes:'0.5% of material cost'},
+  {id:'CI06',name:'Local Transport',group:'Transport Cost',amount:0.20,type:'perunit',notes:''},
+  {id:'CI07',name:'Export Freight',group:'Transport Cost',amount:50,type:'fixed',notes:'Per shipment'},
+  {id:'CI08',name:'Box & Label',group:'Packaging Cost',amount:0.35,type:'perunit',notes:''},
+  {id:'CI09',name:'Management Salaries',group:'Management Cost',amount:500,type:'fixed',notes:'Monthly'},
+  {id:'CI10',name:'Chemical Treatment',group:'Chemical Cost',amount:0.08,type:'perunit',notes:''},
+  {id:'CI11',name:'QC & Testing',group:'Operational Cost',amount:0.15,type:'perunit',notes:''},
+  {id:'CI12',name:'Warehouse Storage',group:'Indirect Cost',amount:0.10,type:'perunit',notes:''},
+];
+
+// ══════════════════════════════════════════════
+// LOAD / SAVE
+// ══════════════════════════════════════════════
+function loadData(){
+  try{
+    const cats=localStorage.getItem('bom_categories');
+    const bd=localStorage.getItem('bom_data');
+    const ci=localStorage.getItem('bom_costItems');
+    return{
+      categories:cats?JSON.parse(cats):JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),
+      boms:bd?JSON.parse(bd):JSON.parse(JSON.stringify(DEFAULT_BOMS)),
+      costItems:ci?JSON.parse(ci):JSON.parse(JSON.stringify(DEFAULT_COST_ITEMS)),
+    };
+  }catch(e){return{categories:JSON.parse(JSON.stringify(DEFAULT_CATEGORIES)),boms:JSON.parse(JSON.stringify(DEFAULT_BOMS)),costItems:JSON.parse(JSON.stringify(DEFAULT_COST_ITEMS))};}
+}
+function saveData(){
+  try{
+    localStorage.setItem('bom_categories',JSON.stringify(categories));
+    localStorage.setItem('bom_data',JSON.stringify(boms));
+    localStorage.setItem('bom_costItems',JSON.stringify(costItems));
+  }catch(e){}
+}
+let {categories,boms,costItems}=loadData();
+let selectedId=boms[0]?.id||null;
+let activeFilter='All';
+let editingCompId=null;
+let showAddForm=false;
+let selectedSwatch=PALETTE[4];
+let editingCatIndex=null;
+
+// ══════════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════════
+const calcMatCost=b=>b.components.reduce((s,c)=>s+c.cost*c.qty,0);
+const calcLead=b=>b.components.length?Math.max(...b.components.map(c=>c.leadDays)):0;
+const allComps=()=>boms.flatMap(b=>b.components.map(c=>({...c,bomId:b.id,bomName:b.productName,category:b.category})));
+const getCat=name=>categories.find(c=>c.name===name)||{name,color:'#888'};
+const uid=()=>'C'+Math.random().toString(36).substr(2,6).toUpperCase();
+const today=()=>new Date().toISOString().split('T')[0];
+const fmt=n=>'$'+parseFloat(n).toFixed(4);
+const fmt2=n=>'$'+parseFloat(n).toFixed(2);
+const hex2rgb=h=>{const r=parseInt(h.slice(1,3),16),g=parseInt(h.slice(3,5),16),b=parseInt(h.slice(5,7),16);return`${r},${g},${b}`;};
+const lighten=(hex,a=0.15)=>`rgba(${hex2rgb(hex)},${a})`;
+const typeClass={Raw:'type-raw',Consumable:'type-consumable','Sub-assembly':'type-sub'};
+
+const COST_GROUP_ICONS={
+  'Overhead Cost':'🏭','Utility Cost':'⚡','Operational Cost':'⚙️',
+  'Chemical Cost':'🧪','Bank Charges':'🏦','Transport Cost':'🚛',
+  'Packaging Cost':'📦','Management Cost':'👔','Indirect Cost':'🔗','Other Cost':'💼'
+};
+const COST_GROUP_COLORS={
+  'Overhead Cost':'#3b82f6','Utility Cost':'#f59e0b','Operational Cost':'#8b5cf6',
+  'Chemical Cost':'#06b6d4','Bank Charges':'#e54c4c','Transport Cost':'#059669',
+  'Packaging Cost':'#f97316','Management Cost':'#0f3460','Indirect Cost':'#888','Other Cost':'#666'
+};
+
+function calcTotalCostPerUnit(bomId,prodQty){
+  const b=boms.find(x=>x.id===bomId); if(!b)return{matCost:0,addCost:0,total:0,groups:{}};
+  const matCost=calcMatCost(b);
+  const qty=parseFloat(prodQty)||1;
+  let addCost=0; const groups={};
+  costItems.forEach(ci=>{
+    let val=0;
+    if(ci.type==='fixed') val=parseFloat(ci.amount)/qty;
+    else if(ci.type==='perunit') val=parseFloat(ci.amount);
+    else if(ci.type==='pct') val=matCost*(parseFloat(ci.amount)/100);
+    if(!groups[ci.group])groups[ci.group]=0;
+    groups[ci.group]+=val;
+    addCost+=val;
+  });
+  return{matCost,addCost,total:matCost+addCost,groups};
+}
+
+function toast(msg){const t=document.createElement('div');t.className='toast';t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2500);}
+
+// ══════════════════════════════════════════════
+// STATS
+// ══════════════════════════════════════════════
+function updateStats(){
+  document.getElementById('stat-total').textContent=boms.length;
+  document.getElementById('stat-active').textContent=boms.filter(b=>b.status==='Active').length;
+  document.getElementById('stat-parts').textContent=new Set(allComps().map(c=>c.partNo)).size;
+  document.getElementById('stat-suppliers').textContent=new Set(allComps().map(c=>c.supplier)).size;
+  document.getElementById('stat-cats').textContent=categories.length;
+  document.getElementById('header-sub').textContent=categories.map(c=>c.name).join(' · ')||'No categories yet';
+}
+
+// ══════════════════════════════════════════════
+// FILTERS
+// ══════════════════════════════════════════════
+function renderFilters(){
+  const el=document.getElementById('filters');
+  el.innerHTML=`<button class="filter-btn ${activeFilter==='All'?'active':''}" onclick="setFilter('All',this)">All</button>`+
+    categories.map(c=>`<button class="filter-btn ${activeFilter===c.name?'active':''}" onclick="setFilter('${c.name.replace(/'/g,"\\'")}',this)" style="${activeFilter===c.name?`background:${c.color};border-color:${c.color};`:''}">${c.name}</button>`).join('');
+}
+function setFilter(cat,btn){activeFilter=cat;renderFilters();renderBOMList();}
+
+// ══════════════════════════════════════════════
+// BOM LIST
+// ══════════════════════════════════════════════
+function renderBOMList(){
+  const q=document.getElementById('search-input').value.toLowerCase();
+  const filtered=boms.filter(b=>(activeFilter==='All'||b.category===activeFilter)&&(b.productName.toLowerCase().includes(q)||b.id.toLowerCase().includes(q)));
+  document.getElementById('bom-list').innerHTML=filtered.map(b=>{
+    const cat=getCat(b.category);const isSel=b.id===selectedId;
+    const selStyle=isSel?`background:${lighten(cat.color,0.12)};border-color:${cat.color};box-shadow:0 4px 18px rgba(${hex2rgb(cat.color)},0.22);`:'';
+    return`<div class="bom-card" style="${selStyle}" onclick="selectBOM('${b.id}')">
+      <div class="card-top">
+        <div><div class="card-name" style="color:${isSel?cat.color:'#1a1a2e'}">${b.productName}</div>
+          <div class="card-id" style="color:${isSel?cat.color:'#888'}">${b.id} · ${b.version}</div></div>
+        <span class="status-badge ${b.status==='Active'?'status-active':'status-draft'}">${b.status}</span>
+      </div>
+      <div class="card-bottom">
+        <span style="color:var(--text3)">📦 ${b.components.length} parts</span>
+        <span style="font-weight:700;color:${cat.color}">${fmt2(calcMatCost(b))} mat.</span>
+      </div>
+      <span class="cat-badge" style="background:${lighten(cat.color,0.15)};color:${cat.color}">${b.category}</span>
+    </div>`;
+  }).join('');
+}
+
+function selectBOM(id){selectedId=id;editingCompId=null;showAddForm=false;renderBOMList();renderDetail();}
+
+// ══════════════════════════════════════════════
+// DETAIL PANEL
+// ══════════════════════════════════════════════
+function renderDetail(){
+  const panel=document.getElementById('right-panel');
+  const b=boms.find(x=>x.id===selectedId);
+  if(!b){panel.innerHTML='<div class="empty"><span style="font-size:32px">📋</span><span>Select a BOM to view details</span></div>';return;}
+  const cat=getCat(b.category);const cost=calcMatCost(b);const lead=calcLead(b);
+  const {total}=calcTotalCostPerUnit(b.id,1);
+
+  const uomOpts=['pcs','set','m²','g','kg','ml','l'].map(u=>`<option>${u}</option>`).join('');
+  const rows=b.components.map((c,i)=>{
+    if(editingCompId===c.id){
+      return`<tr>
+        <td style="color:var(--text4);font-size:10px">${i+1}</td>
+        <td><input class="edit-input" style="width:120px" id="e-name" value="${c.name}"></td>
+        <td><input class="edit-input" id="e-partno" value="${c.partNo}"></td>
+        <td><select class="edit-select" id="e-type"><option ${c.type==='Raw'?'selected':''}>Raw</option><option ${c.type==='Consumable'?'selected':''}>Consumable</option><option ${c.type==='Sub-assembly'?'selected':''}>Sub-assembly</option></select></td>
+        <td><input class="edit-input" style="width:55px" id="e-qty" type="number" value="${c.qty}"></td>
+        <td><select class="edit-select" id="e-uom">${['pcs','set','m²','g','kg','ml','l'].map(u=>`<option ${c.uom===u?'selected':''}>${u}</option>`).join('')}</select></td>
+        <td><input class="edit-input" id="e-sup" value="${c.supplier}"></td>
+        <td><input class="edit-input" style="width:65px" id="e-cost" type="number" step="0.0001" value="${c.cost}"></td>
+        <td>—</td>
+        <td><input class="edit-input" style="width:50px" id="e-lead" type="number" value="${c.leadDays}"></td>
+        <td><button class="btn btn-sm btn-save" onclick="saveEdit('${b.id}','${c.id}')">✓</button>
+            <button class="btn btn-sm btn-grey" onclick="cancelEdit()" style="margin-left:4px">✗</button></td>
+      </tr>`;
+    }
+    return`<tr>
+      <td style="color:var(--text4);font-size:10px">${i+1}</td>
+      <td style="font-weight:600">${c.name}</td><td class="mono">${c.partNo}</td>
+      <td><span class="${typeClass[c.type]||'type-raw'}">${c.type}</span></td>
+      <td style="font-weight:700">${c.qty}</td><td style="color:var(--text3)">${c.uom}</td>
+      <td>${c.supplier}</td><td class="cost-val">${fmt(c.cost)}</td>
+      <td class="cost-val">${fmt(c.cost*c.qty)}</td>
+      <td><span class="${c.leadDays>14?'lead-warn':'lead-ok'}">${c.leadDays}d</span></td>
+      <td><button class="btn btn-sm btn-edit" onclick="startEdit('${c.id}')">Edit</button>
+          <button class="btn btn-sm btn-del" onclick="deleteComp('${b.id}','${c.id}')" style="margin-left:3px">Del</button></td>
+    </tr>`;
+  }).join('');
+
+  const addFormHTML=showAddForm?`<div class="add-form">
+    <div class="form-grid">
+      <div class="form-field"><label>Part Name *</label><input id="nf-name" placeholder="Part name"></div>
+      <div class="form-field"><label>Part No. *</label><input id="nf-partno" placeholder="e.g. SR-001"></div>
+      <div class="form-field"><label>Type</label><select id="nf-type"><option>Raw</option><option>Consumable</option><option>Sub-assembly</option></select></div>
+      <div class="form-field"><label>Qty</label><input id="nf-qty" type="number" value="1" step="any"></div>
+      <div class="form-field"><label>UOM</label><select id="nf-uom">${uomOpts}</select></div>
+      <div class="form-field"><label>Supplier</label><input id="nf-supplier" placeholder="Supplier"></div>
+      <div class="form-field"><label>Unit Cost ($)</label><input id="nf-cost" type="number" value="0" step="0.0001"></div>
+      <div class="form-field"><label>Lead Days</label><input id="nf-lead" type="number" value="7"></div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-green" onclick="saveNewComp('${b.id}')">✓ Add</button>
+      <button class="btn btn-grey" onclick="toggleAddForm()">Cancel</button>
+    </div>
+  </div>`:'';
+
+  panel.innerHTML=`
+    <div class="detail-meta">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">
+        <div>
+          <div class="detail-title">${b.productName}</div>
+          <div class="detail-sub">${b.id} · ${b.version} · Updated: ${b.lastUpdated} &nbsp;<span class="status-badge ${b.status==='Active'?'status-active':'status-draft'}">${b.status}</span></div>
+        </div>
+        <button class="btn btn-del btn-sm" onclick="deleteBOM('${b.id}')">🗑 Delete BOM</button>
+      </div>
+      <div class="detail-kpis">
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--red)">${fmt2(cost)}</div><div class="kpi-lbl">Material Cost</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--purple)">${fmt2(total)}</div><div class="kpi-lbl">Total Mfg Cost</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--navy3)">${lead}d</div><div class="kpi-lbl">Max Lead</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="color:var(--green)">${b.components.length}</div><div class="kpi-lbl">Components</div></div>
+        <div class="kpi-box"><div class="kpi-val" style="font-size:12px;padding:4px 0;color:${cat.color}">${b.category}</div><div class="kpi-lbl">Category</div></div>
+      </div>
+    </div>
+    <div class="table-wrap">
+      <div class="table-head"><h3>Components</h3><button class="btn btn-red btn-sm" onclick="toggleAddForm()">+ Add Component</button></div>
+      ${addFormHTML}
+      <div style="overflow-x:auto"><table>
+        <thead><tr><th>#</th><th>Part Name</th><th>Part No.</th><th>Type</th><th>Qty</th><th>UOM</th><th>Supplier</th><th>Unit Cost</th><th>Ext. Cost</th><th>Lead</th><th>Actions</th></tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr class="tfoot-row"><td colspan="8" style="text-align:right;color:var(--text2)">Material Cost:</td><td class="total-cost">${fmt2(cost)}</td><td colspan="2"></td></tr></tfoot>
+      </table></div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════
+// COMPONENT ACTIONS
+// ══════════════════════════════════════════════
+function toggleAddForm(){if(!isEditMode){toast('🔒 Unlock edit mode first');return;}showAddForm=!showAddForm;editingCompId=null;renderDetail();}
+function saveNewComp(bomId){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  const name=document.getElementById('nf-name').value.trim();const partNo=document.getElementById('nf-partno').value.trim();
+  if(!name||!partNo){toast('⚠️ Part Name and Part No. required');return;}
+  const comp={id:uid(),name,partNo,type:document.getElementById('nf-type').value,qty:parseFloat(document.getElementById('nf-qty').value)||1,uom:document.getElementById('nf-uom').value,supplier:document.getElementById('nf-supplier').value.trim(),cost:parseFloat(document.getElementById('nf-cost').value)||0,leadDays:parseInt(document.getElementById('nf-lead').value)||7};
+  const b=boms.find(x=>x.id===bomId);if(b){b.components.push(comp);b.lastUpdated=today();}
+  showAddForm=false;saveData();updateStats();renderBOMList();renderDetail();toast('✅ Component added!');
+}
+function startEdit(id){if(!isEditMode){toast('🔒 Unlock edit mode first');return;}editingCompId=id;showAddForm=false;renderDetail();}
+function cancelEdit(){editingCompId=null;renderDetail();}
+function saveEdit(bomId,compId){
+  const b=boms.find(x=>x.id===bomId);if(!b)return;const c=b.components.find(x=>x.id===compId);if(!c)return;
+  c.name=document.getElementById('e-name').value.trim()||c.name;
+  c.partNo=document.getElementById('e-partno').value.trim()||c.partNo;
+  c.type=document.getElementById('e-type').value;
+  c.qty=parseFloat(document.getElementById('e-qty').value)||c.qty;
+  c.uom=document.getElementById('e-uom').value;
+  c.supplier=document.getElementById('e-sup').value.trim()||c.supplier;
+  c.cost=parseFloat(document.getElementById('e-cost').value)||c.cost;
+  c.leadDays=parseInt(document.getElementById('e-lead').value)||c.leadDays;
+  b.lastUpdated=today();editingCompId=null;saveData();updateStats();renderBOMList();renderDetail();toast('✏️ Updated!');
+}
+function deleteComp(bomId,compId){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  if(!confirm('Delete this component?'))return;
+  const b=boms.find(x=>x.id===bomId);if(b){b.components=b.components.filter(c=>c.id!==compId);b.lastUpdated=today();}
+  saveData();updateStats();renderBOMList();renderDetail();toast('🗑 Deleted');
+}
+
+// ══════════════════════════════════════════════
+// BOM MODAL
+// ══════════════════════════════════════════════
+function openAddBOMModal(){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  const sel=document.getElementById('new-bom-cat');
+  sel.innerHTML='<option value="">-- Select --</option>'+categories.map(c=>`<option>${c.name}</option>`).join('');
+  document.getElementById('add-bom-modal').classList.add('show');
+}
+function closeAddBOMModal(){document.getElementById('add-bom-modal').classList.remove('show');}
+function addBOM(){
+  const name=document.getElementById('new-bom-name').value.trim();const id=document.getElementById('new-bom-id').value.trim();const cat=document.getElementById('new-bom-cat').value;
+  if(!name||!id||!cat){toast('⚠️ Fill all required fields');return;}
+  if(boms.find(b=>b.id===id)){toast('⚠️ BOM ID already exists');return;}
+  boms.push({id,productName:name,category:cat,version:document.getElementById('new-bom-ver').value||'v1.0',status:document.getElementById('new-bom-status').value,lastUpdated:today(),components:[]});
+  closeAddBOMModal();['new-bom-name','new-bom-id'].forEach(f=>document.getElementById(f).value='');
+  document.getElementById('new-bom-ver').value='v1.0';
+  selectedId=id;saveData();updateStats();renderFilters();renderBOMList();renderDetail();toast('🎉 BOM created!');
+}
+function deleteBOM(id){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  if(!confirm('Delete this entire BOM?'))return;
+  boms=boms.filter(b=>b.id!==id);selectedId=boms[0]?.id||null;
+  saveData();updateStats();renderBOMList();renderDetail();toast('🗑 BOM deleted');
+}
+document.getElementById('add-bom-modal').addEventListener('click',function(e){if(e.target===this)closeAddBOMModal();});
+
+// ══════════════════════════════════════════════
+// ★ COST STRUCTURE TAB ★
+// ══════════════════════════════════════════════
+function populateCostBOMSelect(){
+  const sel=document.getElementById('cost-bom-select');
+  const prev=sel.value;
+  sel.innerHTML='<option value="">-- Choose a BOM --</option>'+boms.map(b=>`<option value="${b.id}">${b.productName} (${b.id})</option>`).join('');
+  if(prev)sel.value=prev;
+}
+
+function renderCostTab(){
+  populateCostBOMSelect();
+  const bomId=document.getElementById('cost-bom-select').value;
+  const prodQty=parseFloat(document.getElementById('prod-qty').value)||1;
+
+  if(!bomId){
+    document.getElementById('gt-val').textContent='$ 0.00';
+    document.getElementById('gt-breakdown').innerHTML='';
+    document.getElementById('mat-rows').innerHTML='<div style="padding:12px 20px;color:var(--text3);font-size:13px">Select a BOM above to see material cost breakdown.</div>';
+    document.getElementById('cost-groups-container').innerHTML='';
+    return;
+  }
+  const b=boms.find(x=>x.id===bomId);
+  const matCost=calcMatCost(b);
+  const {total,addCost,groups}=calcTotalCostPerUnit(bomId,prodQty);
+
+  // Grand total box
+  document.getElementById('gt-val').textContent=fmt2(total)+' /unit';
+  document.getElementById('gt-breakdown').innerHTML=`
+    <div class="gt-item"><div class="gt-item-val" style="color:#94a3b8">${fmt2(matCost)}</div><div class="gt-item-lbl">Material</div></div>
+    <div class="gt-item"><div class="gt-item-val" style="color:#fbbf24">+${fmt2(addCost)}</div><div class="gt-item-lbl">Add. Costs</div></div>
+    <div class="gt-item"><div class="gt-item-val" style="color:#34d399">${((addCost/total)*100).toFixed(1)}%</div><div class="gt-item-lbl">Add. Cost %</div></div>`;
+
+  // Material rows
+  document.getElementById('mat-total').textContent=fmt2(matCost);
+  document.getElementById('mat-rows').innerHTML=b.components.map(c=>{
+    const ext=c.cost*c.qty; const pct=matCost>0?((ext/matCost)*100).toFixed(1):'0.0';
+    return`<div class="cost-item-row">
+      <div class="cost-item-name">${c.name} <span class="mono" style="color:var(--text3)">${c.partNo}</span></div>
+      <div style="font-size:11px;color:var(--text3)">${c.qty} ${c.uom} × ${fmt(c.cost)}</div>
+      <div class="cost-item-val">${fmt2(ext)}</div>
+      <div class="cost-item-pct">${pct}%</div>
+    </div>`;
+  }).join('');
+
+  // Cost groups
+  const allGroups=[...new Set(costItems.map(ci=>ci.group))];
+  document.getElementById('cost-groups-container').innerHTML=allGroups.map(grp=>{
+    const items=costItems.filter(ci=>ci.group===grp);
+    const icon=COST_GROUP_ICONS[grp]||'💼';
+    const color=COST_GROUP_COLORS[grp]||'#888';
+    const grpTotal=items.reduce((s,ci)=>{
+      if(ci.type==='fixed')return s+parseFloat(ci.amount)/prodQty;
+      if(ci.type==='perunit')return s+parseFloat(ci.amount);
+      if(ci.type==='pct')return s+matCost*(parseFloat(ci.amount)/100);
+      return s;
+    },0);
+    const rows=items.map(ci=>{
+      let val=0,typeLabel='';
+      if(ci.type==='fixed'){val=parseFloat(ci.amount)/prodQty;typeLabel=`Fixed $${ci.amount} ÷ ${prodQty}u`;}
+      else if(ci.type==='perunit'){val=parseFloat(ci.amount);typeLabel='Per Unit';}
+      else if(ci.type==='pct'){val=matCost*(parseFloat(ci.amount)/100);typeLabel=`${ci.amount}% of Mat.`;}
+      const pct=total>0?((val/total)*100).toFixed(1):'0.0';
+      return`<div class="cost-item-row">
+        <div class="cost-item-name">${ci.name}${ci.notes?` <span style="font-size:10px;color:var(--text3)">(${ci.notes})</span>`:''}</div>
+        <div style="font-size:11px;color:var(--text3)">${typeLabel}</div>
+        <div class="cost-item-val">${fmt2(val)}</div>
+        <div class="cost-item-pct">${pct}%</div>
+        <div><button class="btn btn-sm btn-del" onclick="deleteCostItem('${ci.id}')">✕</button></div>
+      </div>`;
+    }).join('');
+    return`<div class="cost-section">
+      <div class="cost-section-head">
+        <h4>${icon} ${grp}</h4>
+        <span style="font-weight:800;color:${color}">${fmt2(grpTotal)}</span>
+      </div>
+      ${rows}
+    </div>`;
+  }).join('');
+}
+
+function addCostItem(){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  const name=document.getElementById('nc-name').value.trim();
+  if(!name){toast('⚠️ Enter a cost name');return;}
+  const ci={
+    id:'CI'+Date.now(),
+    name,
+    group:document.getElementById('nc-group').value,
+    amount:parseFloat(document.getElementById('nc-amount').value)||0,
+    type:document.getElementById('nc-type').value,
+    notes:document.getElementById('nc-notes').value.trim()
+  };
+  costItems.push(ci);
+  document.getElementById('nc-name').value='';document.getElementById('nc-amount').value='';document.getElementById('nc-notes').value='';
+  saveData();renderCostTab();toast(`✅ "${name}" added to cost structure!`);
+}
+
+function deleteCostItem(id){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  if(!confirm('Remove this cost item?'))return;
+  costItems=costItems.filter(c=>c.id!==id);
+  saveData();renderCostTab();toast('🗑 Cost item removed');
+}
+
+// ══════════════════════════════════════════════
+// CATEGORY MANAGER
+// ══════════════════════════════════════════════
+function renderSwatches(containerId,selColor,cb){
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML=PALETTE.map(c=>`<div class="swatch ${selColor===c?'selected':''}" style="background:${c}" onclick="(${cb.toString()})('${c}')"></div>`).join('');
+}
+function initSwatches(){renderSwatches('color-swatches',selectedSwatch,color=>{selectedSwatch=color;initSwatches();});}
+
+function renderCategoryList(){
+  const el=document.getElementById('cat-list');
+  if(!categories.length){el.innerHTML='<div style="padding:20px;text-align:center;color:var(--text3)">No categories yet.</div>';return;}
+  el.innerHTML=categories.map((cat,i)=>{
+    const n=boms.filter(b=>b.category===cat.name).length;
+    if(editingCatIndex===i){
+      return`<div class="cat-row" style="background:#fffbeb;border:1.5px solid #f59e0b;">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;flex-wrap:wrap">
+          <input id="edit-cat-name-${i}" value="${cat.name}" style="padding:6px 10px;border-radius:7px;border:1.5px solid var(--red);font-size:13px;font-family:'DM Sans',sans-serif;width:150px;outline:none;">
+          <div class="color-picker-wrap"><label>Color</label><div class="color-swatches" id="edit-swatches-${i}"></div></div>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-sm btn-save" onclick="saveCatEdit(${i})">✓ Save</button>
+          <button class="btn btn-sm btn-grey" onclick="cancelCatEdit()">✗</button>
+        </div>
+      </div>`;
+    }
+    return`<div class="cat-row">
+      <div class="cat-info"><div class="cat-dot" style="background:${cat.color}"></div>
+        <div><div class="cat-name-txt">${cat.name}</div><div class="cat-bom-count">${n} BOM${n!==1?'s':''}</div></div></div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-sm btn-edit" onclick="startCatEdit(${i})">✏️ Edit</button>
+        <button class="btn btn-sm btn-del" onclick="deleteCat(${i})">🗑</button>
+      </div>
+    </div>`;
+  }).join('');
+  if(editingCatIndex!==null){
+    let ec=categories[editingCatIndex].color;
+    window._editCatColor=ec;
+    renderSwatches(`edit-swatches-${editingCatIndex}`,ec,color=>{window._editCatColor=color;renderSwatches(`edit-swatches-${editingCatIndex}`,color,arguments.callee);});
+  }
+}
+function addCategory(){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  const name=document.getElementById('new-cat-name').value.trim();
+  if(!name){toast('⚠️ Enter category name');return;}
+  if(categories.find(c=>c.name.toLowerCase()===name.toLowerCase())){toast('⚠️ Already exists');return;}
+  categories.push({name,color:selectedSwatch});
+  document.getElementById('new-cat-name').value='';
+  saveData();updateStats();renderFilters();renderCategoryList();toast(`✅ "${name}" added!`);
+}
+function startCatEdit(i){if(!isEditMode){toast('🔒 Unlock edit mode first');return;}editingCatIndex=i;window._editCatColor=categories[i].color;renderCategoryList();}
+function cancelCatEdit(){editingCatIndex=null;renderCategoryList();}
+function saveCatEdit(i){
+  const newName=document.getElementById(`edit-cat-name-${i}`).value.trim();
+  if(!newName){toast('⚠️ Name required');return;}
+  const oldName=categories[i].name;
+  if(oldName!==newName)boms.forEach(b=>{if(b.category===oldName)b.category=newName;});
+  categories[i]={name:newName,color:window._editCatColor||categories[i].color};
+  editingCatIndex=null;saveData();updateStats();renderFilters();renderBOMList();renderCategoryList();toast('✏️ Category updated!');
+}
+function deleteCat(i){
+  if(!isEditMode){toast('🔒 Unlock edit mode first');return;}
+  const cat=categories[i];const n=boms.filter(b=>b.category===cat.name).length;
+  if(!confirm(`Delete "${cat.name}"?${n>0?` (${n} BOMs use it)`:''})`))return;
+  categories.splice(i,1);if(activeFilter===cat.name)activeFilter='All';
+  saveData();updateStats();renderFilters();renderCategoryList();toast(`🗑 "${cat.name}" deleted`);
+}
+
+// ══════════════════════════════════════════════
+// TABS
+// ══════════════════════════════════════════════
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');btn.classList.add('active');
+  if(name==='matrix')renderMatrix();
+  if(name==='supplier')renderSupplier();
+  if(name==='analytics')renderAnalytics();
+  if(name==='categories'){renderCategoryList();initSwatches();}
+  if(name==='costs'){renderCostTab();}
+}
+
+// ══════════════════════════════════════════════
+// MATRIX
+// ══════════════════════════════════════════════
+function renderMatrix(){
+  const g={};allComps().forEach(c=>{if(!g[c.partNo])g[c.partNo]={...c,boms:[]};if(!g[c.partNo].boms.includes(c.bomName))g[c.partNo].boms.push(c.bomName);});
+  document.getElementById('matrix-body').innerHTML=Object.values(g).map((c,i)=>`
+    <tr style="background:${i%2===0?'#fff':'#fafbfd'}">
+      <td class="mono">${c.partNo}</td><td style="font-weight:600">${c.name}</td>
+      <td><span class="${typeClass[c.type]||'type-raw'}">${c.type}</span></td>
+      <td>${c.supplier}</td><td class="cost-val">${fmt(c.cost)}</td>
+      <td>${c.boms.map(b=>`<span style="font-size:10px;padding:2px 6px;background:var(--blue-bg);color:var(--blue-txt);border-radius:7px;font-weight:600;margin-right:3px">${b}</span>`).join('')}</td>
+      <td style="font-weight:800;color:${c.boms.length>1?'var(--green)':'var(--text4)'}">${c.boms.length}${c.boms.length>1?'<span class="shared-tag">SHARED</span>':''}</td>
+    </tr>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// SUPPLIER
+// ══════════════════════════════════════════════
+function renderSupplier(){
+  const s={};allComps().forEach(c=>{if(!s[c.supplier])s[c.supplier]={parts:[],boms:new Set(),maxLead:0,value:0};s[c.supplier].parts.push(c.name);s[c.supplier].boms.add(c.bomName);s[c.supplier].maxLead=Math.max(s[c.supplier].maxLead,c.leadDays);s[c.supplier].value+=c.cost*c.qty;});
+  document.getElementById('supplier-grid').innerHTML=Object.entries(s).map(([name,s])=>`
+    <div class="info-card">
+      <div style="display:flex;justify-content:space-between;margin-bottom:10px">
+        <div><div style="font-size:15px;font-weight:800">🏭 ${name}</div><div style="font-size:11px;color:var(--text3);margin-top:2px">${s.parts.length} part(s) · ${s.boms.size} BOM(s)</div></div>
+        <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">Max Lead</div><div style="font-weight:800;color:${s.maxLead>14?'#b91c1c':'var(--green)'}">${s.maxLead}d</div></div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${[...new Set(s.parts)].map(p=>`<span style="font-size:11px;padding:2px 8px;background:var(--grey);border-radius:7px">${p}</span>`).join('')}</div>
+      <div style="border-top:1px solid var(--grey);padding-top:8px;display:flex;justify-content:space-between;font-size:12px">
+        <span style="color:var(--text3)">${[...s.boms].join(', ').substring(0,35)}${[...s.boms].join(', ').length>35?'...':''}</span>
+        <span style="font-weight:700;color:var(--navy3)">${fmt2(s.value)}</span>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// ANALYTICS
+// ══════════════════════════════════════════════
+function renderAnalytics(){
+  const maxCost=Math.max(...boms.map(b=>calcTotalCostPerUnit(b.id,1).total),0.001);
+  document.getElementById('cost-chart').innerHTML=boms.map(b=>{
+    const{total,matCost}=calcTotalCostPerUnit(b.id,1);
+    const pct=(total/maxCost)*100; const col=getCat(b.category).color||'#888';
+    return`<div class="bar-row">
+      <div class="bar-label"><span style="font-weight:600">${b.productName}</span><span style="font-weight:700;color:${col}">${fmt2(total)} total &nbsp;<span style="font-size:10px;color:var(--text3)">(Mat: ${fmt2(matCost)})</span></span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('cat-dist').innerHTML=categories.map(cat=>{
+    const n=boms.filter(b=>b.category===cat.name).length;
+    return`<div class="dist-row"><div style="display:flex;align-items:center;gap:8px"><div style="width:11px;height:11px;background:${cat.color};border-radius:3px"></div><span style="font-size:13px;font-weight:600">${cat.name}</span></div><div style="text-align:right"><div style="font-weight:800;font-size:15px;color:${cat.color}">${n}</div><div style="font-size:10px;color:var(--text3)">BOMs</div></div></div>`;
+  }).join('');
+  const risky=allComps().filter(c=>c.leadDays>14);
+  document.getElementById('risk-list').innerHTML=risky.length?risky.map(c=>`<div class="risk-item"><div class="risk-name">${c.name}</div><div class="risk-sub">${c.bomName} · ${c.leadDays}d · ${c.supplier}</div></div>`).join(''):'<div style="color:var(--green);font-size:13px">✅ No high-risk lead times</div>';
+  const tc={Raw:'#3b82f6',Consumable:'#f59e0b','Sub-assembly':'#8b5cf6'};
+  document.getElementById('type-dist').innerHTML=['Raw','Consumable','Sub-assembly'].map(t=>{const n=allComps().filter(c=>c.type===t).length;return`<div class="dist-row"><span style="font-size:12px;padding:2px 9px;border-radius:10px;background:${tc[t]}22;color:${tc[t]};font-weight:700">${t}</span><span style="font-weight:800;font-size:16px;color:${tc[t]}">${n}</span></div>`;}).join('');
+}
+
+// ══════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════
+updateStats();renderFilters();renderBOMList();renderDetail();
+document.getElementById('lock-pwd').addEventListener('keydown',e=>{if(e.key==='Enter')tryUnlock();});
+</script>
+</body>
+</html>
